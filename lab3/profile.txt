@@ -1,0 +1,23 @@
+# Last Modified: Tue Jun 29 13:42:08 2021
+#include <tunables/global>
+
+/home/seed/lab3/command {
+        #include <abstractions/apache2-common>
+        #include <abstractions/base>
+        #include <abstractions/dovecot-common>
+        #include <abstractions/postfix-common>
+
+        capability dac_override,
+        capability dac_read_search,
+
+        deny /bin/ncat x,
+
+        /bin/cat mrix,
+        /bin/dash mrix,
+        /bin/ls mrix,
+        /home/seed/lab3/ r,
+        /home/seed/lab3/readme.txt r ,
+        /home/seed/lab3/command mr ,
+        /proc/filesystems r,
+        /usr/bin/whoami mrix,
+}
